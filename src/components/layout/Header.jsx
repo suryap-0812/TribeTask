@@ -3,9 +3,11 @@ import { Bell, Target } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { currentUser } from '../../data/mockData'
 import Badge from '../ui/Badge'
+import { useAuth } from '../../context/AuthContext'
 
 export default function Header() {
     const location = useLocation()
+    const { logout } = useAuth()
 
     const navItems = [
         { path: '/', label: 'Dashboard', icon: '📊' },
@@ -36,8 +38,8 @@ export default function Header() {
                                     key={item.path}
                                     to={item.path}
                                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
-                                            ? 'bg-primary-50 text-primary'
-                                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                                        ? 'bg-primary-50 text-primary'
+                                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                                         }`}
                                 >
                                     <span className="mr-1.5">{item.icon}</span>
@@ -82,7 +84,13 @@ export default function Header() {
                                         Settings
                                     </DropdownMenu.Item>
                                     <DropdownMenu.Separator className="h-px bg-gray-200 my-1" />
-                                    <DropdownMenu.Item className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md cursor-pointer outline-none">
+                                    <DropdownMenu.Item
+                                        className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md cursor-pointer outline-none"
+                                        onSelect={(e) => {
+                                            e.preventDefault();
+                                            logout();
+                                        }}
+                                    >
                                         Logout
                                     </DropdownMenu.Item>
                                 </DropdownMenu.Content>
