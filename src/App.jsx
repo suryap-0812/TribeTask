@@ -5,6 +5,7 @@ import PendingTasks from './pages/PendingTasks'
 import MyTribes from './pages/MyTribes'
 import FocusSessions from './pages/FocusSessions'
 import Analytics from './pages/Analytics'
+import Profile from './pages/Profile'
 import Login from './pages/Login'
 import { AuthProvider, useAuth } from './context/AuthContext'
 
@@ -30,6 +31,7 @@ function AppContent() {
                                 <Route path="/my-tribes" element={<MyTribes />} />
                                 <Route path="/focus-sessions" element={<FocusSessions />} />
                                 <Route path="/analytics" element={<Analytics />} />
+                                <Route path="/profile" element={<Profile />} />
                                 <Route path="*" element={<Navigate to="/" replace />} />
                             </Routes>
                         </main>

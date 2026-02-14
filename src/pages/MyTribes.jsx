@@ -5,12 +5,14 @@ import Button from '../components/ui/Button'
 import Badge from '../components/ui/Badge'
 import CreateTribeModal from '../components/CreateTribeModal'
 import TribeDetails from '../components/TribeDetails'
+import MySpace from '../components/MySpace'
 import { tribes as initialTribes } from '../data/mockData'
 
 export default function MyTribes() {
     const [tribes, setTribes] = useState(initialTribes)
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const [selectedTribe, setSelectedTribe] = useState(null)
+    const [showMySpace, setShowMySpace] = useState(false)
 
     const handleCreateTribe = (newTribe) => {
         setTribes(prevTribes => [...prevTribes, newTribe])
@@ -22,6 +24,16 @@ export default function MyTribes() {
 
     const handleBackToTribes = () => {
         setSelectedTribe(null)
+        setShowMySpace(false)
+    }
+
+    const handleViewMySpace = () => {
+        setShowMySpace(true)
+    }
+
+    // If My Space is selected, show the My Space view
+    if (showMySpace) {
+        return <MySpace onBack={handleBackToTribes} />
     }
 
     // If a tribe is selected, show the details view
@@ -50,6 +62,65 @@ export default function MyTribes() {
 
             {/* Tribes Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* My Space Card - Personal Workspace */}
+                <Card className="border-2 border-primary hover:shadow-xl transition-all bg-gradient-to-br from-primary-50 to-white">
+                    <CardContent>
+                        <div className="flex items-start gap-3 mb-4">
+                            <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-primary">
+                                <Users className="w-6 h-6 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                                    My Space
+                                    <Badge variant="primary" className="text-xs">Personal</Badge>
+                                </h3>
+                                <p className="text-sm text-gray-600">Your personal workspace</p>
+                            </div>
+                        </div>
+
+                        {/* Description */}
+                        <div className="mb-4 px-3 py-2 bg-white/70 rounded-lg border border-primary-100">
+                            <p className="text-xs text-gray-600">
+                                Manage your personal tasks, resources, and track your individual progress
+                            </p>
+                        </div>
+
+                        {/* Stats */}
+                        <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-primary-100">
+                            <div>
+                                <p className="text-sm text-gray-600">My Tasks</p>
+                                <p className="text-lg font-semibold text-gray-900">24</p>
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-600">Resources</p>
+                                <p className="text-lg font-semibold text-gray-900">12</p>
+                            </div>
+                        </div>
+
+                        {/* Quick Actions */}
+                        <div className="space-y-2">
+                            <Button
+                                variant="primary"
+                                size="sm"
+                                className="w-full"
+                                onClick={() => window.location.href = '/pending-tasks'}
+                            >
+                                <CheckCircle2 className="w-4 h-4 mr-2" />
+                                View My Tasks
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                                onClick={handleViewMySpace}
+                            >
+                                Manage Resources
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Tribe Cards */}
                 {tribes.map((tribe) => (
                     <Card key={tribe.id} className="hover:shadow-lg transition-shadow">
                         <CardContent>

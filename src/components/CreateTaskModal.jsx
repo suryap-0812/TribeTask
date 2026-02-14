@@ -1,11 +1,12 @@
-import { useState } from 'react'
-import { Star } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Star, Users, UserCheck, Crown } from 'lucide-react'
 import Modal, { ModalClose } from './ui/Modal'
 import { Input, Textarea, Label } from './ui/Input'
 import Button from './ui/Button'
-import { tribes } from '../data/mockData'
+import { tribesAPI } from '../services/api'
 
 export default function CreateTaskModal({ open, onOpenChange, onCreateTask }) {
+    const [tribes, setTribes] = useState([])
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -13,8 +14,27 @@ export default function CreateTaskModal({ open, onOpenChange, onCreateTask }) {
         priority: 'medium',
         taskType: 'personal',
         tribe: '',
+        tribeRole: '',
+        isGroupTask: false,
+        assignedRole: 'member', // personal, member, leader
         starred: false,
     })
+
+    // Load tribes when modal opens
+    useEffect(() => {
+        if (open) {
+            loadTribes()
+        }
+    }, [open])
+
+    const loadTribes = async () => {
+        try {
+            const tribesData = await tribesAPI.getTribes()
+            setTribes(tribesData)
+        } catch (error) {
+            console.error('Error loading tribes:', error)
+        }
+    }
 
     const handleSubmit = (e) => {
         e.preventDefault()
@@ -24,18 +44,27 @@ export default function CreateTaskModal({ open, onOpenChange, onCreateTask }) {
             return
         }
 
+        if (formData.taskType === 'tribe' && !formData.tribe) {
+            alert('Please select a tribe')
+            return
+        }
+
+        const selectedTribe = tribes.find(t => t.name === formData.tribe)
+
         const newTask = {
-            id: Date.now(),
             title: formData.title,
             description: formData.description,
             priority: formData.priority,
             status: 'pending',
             dueDate: formData.dueDate ? new Date(formData.dueDate) : new Date(),
-            tribe: formData.taskType === 'tribe' ? formData.tribe : 'Personal',
+            tribe: formData.taskType === 'tribe' ? formData.tribe : null,
+            tribeRole: formData.taskType === 'tribe' ? selectedTribe?.role : null,
+            isGroupTask: formData.taskType === 'tribe' ? formData.isGroupTask : false,
+            assignedRole: formData.assignedRole,
             completed: false,
             starred: formData.starred,
             completedAt: null,
-            tags: [],
+            tags: formData.isGroupTask ? ['GROUP'] : [],
         }
 
         onCreateTask(newTask)
@@ -48,15 +77,20 @@ export default function CreateTaskModal({ open, onOpenChange, onCreateTask }) {
             priority: 'medium',
             taskType: 'personal',
             tribe: '',
+            tribeRole: '',
+            isGroupTask: false,
+            assignedRole: 'member',
             starred: false,
         })
 
         onOpenChange(false)
     }
 
+    const selectedTribe = tribes.find(t => t.name === formData.tribe)
+
     return (
         <Modal open={open} onOpenChange={onOpenChange} title="Create Task">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto pr-2">
                 {/* Task Title */}
                 <div>
                     <Label htmlFor="title">
@@ -107,8 +141,8 @@ export default function CreateTaskModal({ open, onOpenChange, onCreateTask }) {
                                     type="button"
                                     onClick={() => setFormData({ ...formData, priority })}
                                     className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${formData.priority === priority
-                                            ? 'bg-primary text-white border-primary'
-                                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                        ? 'bg-primary text-white border-primary'
+                                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                                         }`}
                                 >
                                     {priority.charAt(0).toUpperCase() + priority.slice(1)}
@@ -118,71 +152,190 @@ export default function CreateTaskModal({ open, onOpenChange, onCreateTask }) {
                     </div>
                 </div>
 
-                {/* Task Type and Importance */}
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <Label>Task Type</Label>
-                        <div className="flex gap-3 mt-1">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="taskType"
-                                    value="personal"
-                                    checked={formData.taskType === 'personal'}
-                                    onChange={(e) => setFormData({ ...formData, taskType: e.target.value, tribe: '' })}
-                                    className="w-4 h-4 text-primary focus:ring-primary"
-                                />
-                                <span className="text-sm text-gray-700">Personal</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="taskType"
-                                    value="tribe"
-                                    checked={formData.taskType === 'tribe'}
-                                    onChange={(e) => setFormData({ ...formData, taskType: e.target.value })}
-                                    className="w-4 h-4 text-primary focus:ring-primary"
-                                />
-                                <span className="text-sm text-gray-700">Tribe</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div>
-                        <Label>Importance</Label>
-                        <button
-                            type="button"
-                            onClick={() => setFormData({ ...formData, starred: !formData.starred })}
-                            className="flex items-center gap-2 mt-1 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                        >
-                            <Star className={`w-4 h-4 ${formData.starred ? 'fill-yellow-500 text-yellow-500' : 'text-gray-400'}`} />
-                            <span>{formData.starred ? 'Starred' : 'Add Star'}</span>
-                        </button>
+                {/* Task Type */}
+                <div>
+                    <Label>Task Type</Label>
+                    <div className="flex gap-3 mt-1">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="radio"
+                                name="taskType"
+                                value="personal"
+                                checked={formData.taskType === 'personal'}
+                                onChange={(e) => setFormData({
+                                    ...formData,
+                                    taskType: e.target.value,
+                                    tribe: '',
+                                    isGroupTask: false,
+                                    assignedRole: 'personal'
+                                })}
+                                className="w-4 h-4 text-primary focus:ring-primary"
+                            />
+                            <span className="text-sm text-gray-700">Personal</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="radio"
+                                name="taskType"
+                                value="tribe"
+                                checked={formData.taskType === 'tribe'}
+                                onChange={(e) => setFormData({
+                                    ...formData,
+                                    taskType: e.target.value,
+                                    assignedRole: 'member'
+                                })}
+                                className="w-4 h-4 text-primary focus:ring-primary"
+                            />
+                            <span className="text-sm text-gray-700">Tribe</span>
+                        </label>
                     </div>
                 </div>
 
-                {/* Tribe Selection (if tribe type) */}
+                {/* Tribe Selection and Details (if tribe type) */}
                 {formData.taskType === 'tribe' && (
-                    <div>
-                        <Label htmlFor="tribe">Select Tribe</Label>
-                        <select
-                            id="tribe"
-                            value={formData.tribe}
-                            onChange={(e) => setFormData({ ...formData, tribe: e.target.value })}
-                            className="mt-1 w-full h-10 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                        >
-                            <option value="">Choose a tribe...</option>
-                            {tribes.map((tribe) => (
-                                <option key={tribe.id} value={tribe.name}>
-                                    {tribe.name}
-                                </option>
-                            ))}
-                        </select>
+                    <div className="space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div>
+                            <Label htmlFor="tribe">
+                                Select Tribe <span className="text-red-500">*</span>
+                            </Label>
+                            <select
+                                id="tribe"
+                                value={formData.tribe}
+                                onChange={(e) => {
+                                    const selected = tribes.find(t => t.name === e.target.value)
+                                    setFormData({
+                                        ...formData,
+                                        tribe: e.target.value,
+                                        tribeRole: selected?.role || ''
+                                    })
+                                }}
+                                className="mt-1 w-full h-10 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                            >
+                                <option value="">Choose a tribe...</option>
+                                {tribes.map((tribe) => (
+                                    <option key={tribe.id} value={tribe.name}>
+                                        {tribe.name} ({tribe.role})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Tribe Info Display */}
+                        {selectedTribe && (
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-600">Your Role:</span>
+                                    <div className="flex items-center gap-1">
+                                        {selectedTribe.role === 'Leader' ? (
+                                            <Crown className="w-4 h-4 text-yellow-600" />
+                                        ) : (
+                                            <UserCheck className="w-4 h-4 text-blue-600" />
+                                        )}
+                                        <span className="font-medium text-gray-900">{selectedTribe.role}</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-600">Members:</span>
+                                    <span className="font-medium text-gray-900">{selectedTribe.members}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-600">Active Tasks:</span>
+                                    <span className="font-medium text-gray-900">{selectedTribe.activeTasks}</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Group Task Toggle */}
+                        <div className="pt-2 border-t border-gray-200">
+                            <label className="flex items-center gap-3 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.isGroupTask}
+                                    onChange={(e) => setFormData({ ...formData, isGroupTask: e.target.checked })}
+                                    className="w-4 h-4 rounded text-primary focus:ring-primary"
+                                />
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                        <Users className="w-4 h-4 text-gray-600" />
+                                        <span className="text-sm font-medium text-gray-900">Group Task</span>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-0.5">
+                                        This task will be shared with all tribe members
+                                    </p>
+                                </div>
+                            </label>
+                        </div>
+
+                        {/* Assignment Role */}
+                        <div>
+                            <Label>Task Assignment</Label>
+                            <div className="grid grid-cols-3 gap-2 mt-1">
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, assignedRole: 'member' })}
+                                    className={`flex flex-col items-center gap-1 px-3 py-2.5 text-xs font-medium rounded-lg border transition-colors ${formData.assignedRole === 'member'
+                                        ? 'bg-primary text-white border-primary'
+                                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    <UserCheck className="w-4 h-4" />
+                                    <span>As Member</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, assignedRole: 'leader' })}
+                                    disabled={selectedTribe?.role !== 'Leader'}
+                                    className={`flex flex-col items-center gap-1 px-3 py-2.5 text-xs font-medium rounded-lg border transition-colors ${formData.assignedRole === 'leader'
+                                            ? 'bg-primary text-white border-primary'
+                                            : selectedTribe?.role !== 'Leader'
+                                                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    <Crown className="w-4 h-4" />
+                                    <span>As Leader</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, assignedRole: 'delegate' })}
+                                    disabled={selectedTribe?.role !== 'Leader'}
+                                    className={`flex flex-col items-center gap-1 px-3 py-2.5 text-xs font-medium rounded-lg border transition-colors ${formData.assignedRole === 'delegate'
+                                            ? 'bg-primary text-white border-primary'
+                                            : selectedTribe?.role !== 'Leader'
+                                                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    <Users className="w-4 h-4" />
+                                    <span>Delegate</span>
+                                </button>
+                            </div>
+                            {selectedTribe?.role !== 'Leader' && (
+                                <p className="text-xs text-gray-500 mt-2">
+                                    Only tribe leaders can assign tasks as leader or delegate to others
+                                </p>
+                            )}
+                        </div>
                     </div>
                 )}
 
+                {/* Importance */}
+                <div>
+                    <Label>Importance</Label>
+                    <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, starred: !formData.starred })}
+                        className="flex items-center gap-2 mt-1 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors border border-gray-200 w-full"
+                    >
+                        <Star className={`w-4 h-4 ${formData.starred ? 'fill-yellow-500 text-yellow-500' : 'text-gray-400'}`} />
+                        <span>{formData.starred ? 'Starred' : 'Add Star'}</span>
+                    </button>
+                </div>
+
                 {/* Actions */}
-                <div className="flex justify-end gap-3 pt-4">
+                <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
                     <ModalClose asChild>
                         <Button type="button" variant="ghost">
                             Cancel

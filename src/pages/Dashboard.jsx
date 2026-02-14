@@ -1,47 +1,93 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Calendar, Clock, CheckCircle2, Users, Star, Target, Plus } from 'lucide-react'
 import Card, { CardHeader, CardTitle, CardContent } from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Badge from '../components/ui/Badge'
 import Progress from '../components/ui/Progress'
 import CreateTaskModal from '../components/CreateTaskModal'
-import { currentUser, tasks as initialTasks, stats } from '../data/mockData'
+import { useAuth } from '../context/AuthContext'
+import { statsAPI, tasksAPI } from '../services/api'
 import { formatTime } from '../utils/helpers'
 
 export default function Dashboard() {
-    const [tasks, setTasks] = useState(initialTasks)
+    const { user } = useAuth()
+    const [tasks, setTasks] = useState([])
+    const [stats, setStats] = useState(null)
+    const [loading, setLoading] = useState(true)
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+    const [completingTasks, setCompletingTasks] = useState(new Set())
 
-    const todayTasks = tasks.filter(task => task.dueDate.toDateString() === new Date().toDateString())
-    const upcomingTasks = tasks.filter(task => {
-        const isUpcoming = task.dueDate > new Date() && task.dueDate.toDateString() !== new Date().toDateString()
-        return isUpcoming && !task.completed && task.starred
-    })
+    useEffect(() => {
+        loadDashboardData()
+    }, [])
 
-    const handleTaskToggle = (taskId) => {
-        setTasks(prevTasks =>
-            prevTasks.map(task =>
-                task.id === taskId
-                    ? {
-                        ...task,
-                        completed: !task.completed,
-                        completedAt: !task.completed ? new Date() : null,
-                        status: !task.completed ? 'completed' : 'pending'
-                    }
-                    : task
-            )
+    const loadDashboardData = async () => {
+        try {
+            setLoading(true)
+            const data = await statsAPI.getDashboardStats()
+            setStats(data)
+            setTasks(data.recentTasks || [])
+        } catch (error) {
+            console.error('Failed to load dashboard data:', error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleTaskToggle = async (taskId) => {
+        // Add to completing set for animation
+        setCompletingTasks(prev => new Set(prev).add(taskId))
+
+        // Wait for animation to complete before API call
+        setTimeout(async () => {
+            try {
+                await tasksAPI.completeTask(taskId)
+                loadDashboardData() // Reload data
+            } catch (error) {
+                console.error('Failed to toggle task:', error)
+                // Remove from completing set if failed
+                setCompletingTasks(prev => {
+                    const newSet = new Set(prev)
+                    newSet.delete(taskId)
+                    return newSet
+                })
+            }
+        }, 300) // Match CSS transition duration
+    }
+
+    const handleCreateTask = () => {
+        loadDashboardData() // Reload after creating task
+        setIsCreateModalOpen(false)
+    }
+
+    if (loading || !stats) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <p className="text-gray-500">Loading...</p>
+            </div>
         )
     }
 
-    const handleCreateTask = (newTask) => {
-        setTasks(prevTasks => [...prevTasks, newTask])
-    }
+    const todayTasks = tasks.filter(task => {
+        if (!task.dueDate) return false
+        const dueDate = new Date(task.dueDate)
+        const today = new Date()
+        return dueDate.toDateString() === today.toDateString()
+    })
+
+    const upcomingTasks = tasks.filter(task => {
+        if (!task.dueDate || task.completed) return false
+        const dueDate = new Date(task.dueDate)
+        const today = new Date()
+        const isUpcoming = dueDate > today && dueDate.toDateString() !== today.toDateString()
+        return isUpcoming && task.starred
+    })
 
     return (
         <div className="space-y-6">
             {/* Welcome Section */}
             <div>
-                <h1 className="text-3xl font-bold text-gray-900">Welcome back, {currentUser.name}</h1>
+                <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user?.name}</h1>
                 <p className="text-gray-600 mt-1">
                     You have <span className="font-medium">{stats.dueToday} tasks</span> due today. Let's make it a good one.
                 </p>
@@ -118,39 +164,43 @@ export default function Dashboard() {
                             <div className="mb-6">
                                 <div className="flex items-center gap-2 mb-3">
                                     <span className="text-xs font-medium text-gray-500 uppercase">Today</span>
-                                    <Badge variant="primary" className="text-xs">RECOMMENDED TODAY</Badge>
                                 </div>
 
                                 <div className="space-y-3">
                                     {todayTasks.length === 0 ? (
                                         <p className="text-sm text-gray-500 text-center py-4">No tasks due today</p>
                                     ) : (
-                                        todayTasks.map((task) => (
-                                            <div
-                                                key={task.id}
-                                                className={`flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors ${task.completed ? 'opacity-60' : ''
-                                                    }`}
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={task.completed}
-                                                    onChange={() => handleTaskToggle(task.id)}
-                                                    className="mt-1 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
-                                                />
-                                                <div className="flex-1 min-w-0">
-                                                    <p className={`text-sm font-medium ${task.completed ? 'line-through text-gray-400' : 'text-gray-900'
-                                                        }`}>
-                                                        {task.title}
-                                                    </p>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <span className={`text-xs ${task.completed ? 'text-gray-400' : 'text-gray-500'}`}>
-                                                            👥 {task.tribe}
-                                                        </span>
+                                        todayTasks.map((task) => {
+                                            const taskId = task.id || task._id
+                                            return (
+                                                <div
+                                                    key={taskId}
+                                                    className={`flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors ${task.completed ? 'opacity-60' : ''
+                                                        }`}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={task.completed}
+                                                        onChange={() => handleTaskToggle(taskId)}
+                                                        className="mt-1 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                                                    />
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className={`text-sm font-medium ${task.completed ? 'line-through text-gray-400' : 'text-gray-900'
+                                                            }`}>
+                                                            {task.title}
+                                                        </p>
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            {task.tribe && (
+                                                                <span className={`text-xs ${task.completed ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                                    👥 {task.tribe.name || task.tribe}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
+                                                    <Badge variant={task.priority}>{task.priority}</Badge>
                                                 </div>
-                                                <Badge variant={task.priority}>{task.priority}</Badge>
-                                            </div>
-                                        ))
+                                            )
+                                        })
                                     )}
                                 </div>
                             </div>
@@ -167,26 +217,43 @@ export default function Dashboard() {
                                     {upcomingTasks.length === 0 ? (
                                         <p className="text-sm text-gray-500 text-center py-4">No starred upcoming tasks</p>
                                     ) : (
-                                        upcomingTasks.map((task) => (
-                                            <div key={task.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={false}
-                                                    onChange={() => handleTaskToggle(task.id)}
-                                                    className="mt-1 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
-                                                />
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium text-gray-900">{task.title}</p>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <span className="text-xs text-gray-500">👥 {task.tribe}</span>
-                                                        <span className="text-xs text-gray-500">
-                                                            📅 {task.dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                                        </span>
+                                        upcomingTasks.map((task) => {
+                                            const taskId = task._id || task.id
+                                            const isCompleting = completingTasks.has(taskId)
+                                            return (
+                                                <div
+                                                    key={taskId}
+                                                    className={`flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-all duration-300 ${isCompleting ? 'opacity-0 scale-95 h-0 py-0 mb-0 overflow-hidden' : 'opacity-100 scale-100'
+                                                        }`}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isCompleting}
+                                                        onChange={() => handleTaskToggle(taskId)}
+                                                        className="mt-1 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                                                    />
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className={`text-sm font-medium ${isCompleting ? 'line-through text-gray-400' : 'text-gray-900'
+                                                            }`}>
+                                                            {task.title}
+                                                        </p>
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            {task.tribe && (
+                                                                <span className={`text-xs ${isCompleting ? 'text-gray-400' : 'text-gray-500'
+                                                                    }`}>
+                                                                    👥 {task.tribe.name || task.tribe}
+                                                                </span>
+                                                            )}
+                                                            <span className={`text-xs ${isCompleting ? 'text-gray-400' : 'text-gray-500'
+                                                                }`}>
+                                                                📅 {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                            </span>
+                                                        </div>
                                                     </div>
+                                                    <Badge variant={task.priority}>{task.priority}</Badge>
                                                 </div>
-                                                <Badge variant={task.priority}>{task.priority}</Badge>
-                                            </div>
-                                        ))
+                                            )
+                                        })
                                     )}
                                 </div>
                             </div>
@@ -244,7 +311,7 @@ export default function Dashboard() {
                                     <CheckCircle2 className="w-4 h-4 text-gray-400" />
                                     <span className="text-sm text-gray-600">Progress</span>
                                 </div>
-                                <p className="text-xs text-gray-700">You've completed {stats.tasksProgress.completed} tasks this week. Keep it up!</p>
+                                <p className="text-xs text-gray-700">You've completed {stats.tasksProgress.completed} tasks. Keep it up!</p>
                             </div>
                         </CardContent>
                     </Card>

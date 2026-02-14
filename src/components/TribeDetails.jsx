@@ -1,14 +1,71 @@
 import { useState } from 'react'
-import { ArrowLeft, Settings, MoreVertical, Shield, Clock, Users as UsersIcon } from 'lucide-react'
+import { ArrowLeft, Settings, MoreVertical, Shield, Clock, Users as UsersIcon, Trophy, BookOpen, Calendar, BarChart3 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import Card, { CardContent } from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Badge from '../components/ui/Badge'
 import * as Tabs from '@radix-ui/react-tabs'
+import TribeChat from './TribeChat'
+import TribeMembers from './TribeMembers'
+import ProblemSolvingBoard from './ProblemSolvingBoard'
+import BuddyMode from './BuddyMode'
+import RitualScheduler from './RitualScheduler'
+import TribeAnalytics from './TribeAnalytics'
+import Achievements from './Achievements'
+import ResourceLibrary from './ResourceLibrary'
 
 export default function TribeDetails({ tribe, onBack }) {
     const [activeTab, setActiveTab] = useState('overview')
     const navigate = useNavigate()
+
+    // Mock data for demonstration
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{"_id": "user-1", "name": "Current User", "avatar": "CU", "email": "user@example.com"}')
+
+    const tribeMembers = [
+        { _id: '1', name: 'Alex Chen', avatar: 'AC', email: 'alex@example.com', role: 'leader', status: 'online', tasksCompleted: 42, focusTime: 320, joinedAt: new Date(Date.now() - 30 * 86400000) },
+        { _id: '2', name: 'Sarah Johnson', avatar: 'SJ', email: 'sarah@example.com', role: 'member', status: 'online', tasksCompleted: 38, focusTime: 280, joinedAt: new Date(Date.now() - 25 * 86400000) },
+        { _id: '3', name: 'Michael Brown', avatar: 'MB', email: 'michael@example.com', role: 'member', status: 'away', tasksCompleted: 35, focusTime: 250, joinedAt: new Date(Date.now() - 20 * 86400000) },
+        { ...currentUser, role: 'member', status: 'online', tasksCompleted: 28, focusTime: 210, joinedAt: new Date(Date.now() - 15 * 86400000) },
+    ]
+
+    const chatMessages = [
+        { id: 1, sender: tribeMembers[0], content: 'Hey team! Ready for our standup?', timestamp: new Date(Date.now() - 3600000), reactions: [{ userId: '2', emoji: '👍', userName: 'Sarah' }] },
+        { id: 2, sender: tribeMembers[1], content: 'Yes! Just finished my morning tasks', timestamp: new Date(Date.now() - 3000000), reactions: [] },
+        { id: 3, sender: currentUser, content: '@Alex will share the design updates soon', timestamp: new Date(Date.now() - 1800000), reactions: [{ userId: '1', emoji: '🎉', userName: 'Alex' }] },
+    ]
+
+    const problems = [
+        {
+            id: 1,
+            title: 'Performance optimization for dashboard',
+            description: 'The dashboard is loading slowly with large datasets. Need to optimize queries and rendering.',
+            category: 'technical',
+            status: 'open',
+            creator: tribeMembers[0],
+            solutions: [],
+            createdAt: new Date(Date.now() - 86400000),
+            votes: 0
+        },
+        {
+            id: 2,
+            title: 'Design system inconsistencies',
+            description: 'Color palette and spacing need standardization across components.',
+            category: 'design',
+            status: 'discussing',
+            creator: tribeMembers[1],
+            solutions: [
+                {
+                    id: 1,
+                    author: tribeMembers[2],
+                    content: 'We could use CSS variables for consistent theming',
+                    votes: 3,
+                    timestamp: new Date(Date.now() - 43200000)
+                }
+            ],
+            createdAt: new Date(Date.now() - 172800000),
+            votes: 3
+        }
+    ]
 
     const handleBack = () => {
         if (onBack) {
@@ -45,51 +102,92 @@ export default function TribeDetails({ tribe, onBack }) {
             <div>
                 <h1 className="text-3xl font-bold text-gray-900">{tribe.name}</h1>
                 <p className="text-gray-600 mt-1">
-                    {tribe.members} members • Active {tribe.activeToday > 0 ? `${tribe.activeToday * 10} mins ago` : 'recently'}
+                    {tribeMembers.length} members • Active {tribe.activeToday > 0 ? `${tribe.activeToday * 10} mins ago` : 'recently'}
                 </p>
             </div>
 
             {/* Tabs */}
             <Tabs.Root value={activeTab} onValueChange={setActiveTab}>
-                <Tabs.List className="flex gap-6 border-b border-gray-200">
+                <Tabs.List className="flex gap-4 border-b border-gray-200 overflow-x-auto">
                     <Tabs.Trigger
                         value="overview"
-                        className="pb-3 px-1 text-sm font-medium transition-colors relative data-[state=active]:text-primary data-[state=inactive]:text-gray-600 data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-0 data-[state=active]:after:right-0 data-[state=active]:after:h-0.5 data-[state=active]:after:bg-primary"
+                        className="pb-3 px-1 text-sm font-medium transition-colors relative data-[state=active]:text-primary data-[state=inactive]:text-gray-600 data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-0 data-[state=active]:after:right-0 data-[state=active]:after:h-0.5 data-[state=active]:after:bg-primary whitespace-nowrap"
                     >
                         <div className="flex items-center gap-2">
                             <Shield className="w-4 h-4" />
-                            Overview & Rules
-                        </div>
-                    </Tabs.Trigger>
-                    <Tabs.Trigger
-                        value="problem-solving"
-                        className="pb-3 px-1 text-sm font-medium transition-colors relative data-[state=active]:text-primary data-[state=inactive]:text-gray-600 data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-0 data-[state=active]:after:right-0 data-[state=active]:after:h-0.5 data-[state=active]:after:bg-primary"
-                    >
-                        <div className="flex items-center gap-2">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                            </svg>
-                            Problem Solving
+                            Overview
                         </div>
                     </Tabs.Trigger>
                     <Tabs.Trigger
                         value="chat"
-                        className="pb-3 px-1 text-sm font-medium transition-colors relative data-[state=active]:text-primary data-[state=inactive]:text-gray-600 data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-0 data-[state=active]:after:right-0 data-[state=active]:after:h-0.5 data-[state=active]:after:bg-primary"
+                        className="pb-3 px-1 text-sm font-medium transition-colors relative data-[state=active]:text-primary data-[state=inactive]:text-gray-600 data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-0 data-[state=active]:after:right-0 data-[state=active]:after:h-0.5 data-[state=active]:after:bg-primary whitespace-nowrap"
                     >
                         <div className="flex items-center gap-2">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                            </svg>
-                            Tribe Chat
+                            💬
+                            Chat
                         </div>
                     </Tabs.Trigger>
                     <Tabs.Trigger
                         value="members"
-                        className="pb-3 px-1 text-sm font-medium transition-colors relative data-[state=active]:text-primary data-[state=inactive]:text-gray-600 data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-0 data-[state=active]:after:right-0 data-[state=active]:after:h-0.5 data-[state=active]:after:bg-primary"
+                        className="pb-3 px-1 text-sm font-medium transition-colors relative data-[state=active]:text-primary data-[state=inactive]:text-gray-600 data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-0 data-[state=active]:after:right-0 data-[state=active]:after:h-0.5 data-[state=active]:after:bg-primary whitespace-nowrap"
                     >
                         <div className="flex items-center gap-2">
                             <UsersIcon className="w-4 h-4" />
                             Members
+                        </div>
+                    </Tabs.Trigger>
+                    <Tabs.Trigger
+                        value="problem-solving"
+                        className="pb-3 px-1 text-sm font-medium transition-colors relative data-[state=active]:text-primary data-[state=inactive]:text-gray-600 data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-0 data-[state=active]:after:right-0 data-[state=active]:after:h-0.5 data-[state=active]:after:bg-primary whitespace-nowrap"
+                    >
+                        <div className="flex items-center gap-2">
+                            💡
+                            Problems
+                        </div>
+                    </Tabs.Trigger>
+                    <Tabs.Trigger
+                        value="buddy"
+                        className="pb-3 px-1 text-sm font-medium transition-colors relative data-[state=active]:text-primary data-[state=inactive]:text-gray-600 data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-0 data-[state=active]:after:right-0 data-[state=active]:after:h-0.5 data-[state=active]:after:bg-primary whitespace-nowrap"
+                    >
+                        <div className="flex items-center gap-2">
+                            🤝
+                            Buddy
+                        </div>
+                    </Tabs.Trigger>
+                    <Tabs.Trigger
+                        value="rituals"
+                        className="pb-3 px-1 text-sm font-medium transition-colors relative data-[state=active]:text-primary data-[state=inactive]:text-gray-600 data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-0 data-[state=active]:after:right-0 data-[state=active]:after:h-0.5 data-[state=active]:after:bg-primary whitespace-nowrap"
+                    >
+                        <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4" />
+                            Rituals
+                        </div>
+                    </Tabs.Trigger>
+                    <Tabs.Trigger
+                        value="analytics"
+                        className="pb-3 px-1 text-sm font-medium transition-colors relative data-[state=active]:text-primary data-[state=inactive]:text-gray-600 data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-0 data-[state=active]:after:right-0 data-[state=active]:after:h-0.5 data-[state=active]:after:bg-primary whitespace-nowrap"
+                    >
+                        <div className="flex items-center gap-2">
+                            <BarChart3 className="w-4 h-4" />
+                            Analytics
+                        </div>
+                    </Tabs.Trigger>
+                    <Tabs.Trigger
+                        value="achievements"
+                        className="pb-3 px-1 text-sm font-medium transition-colors relative data-[state=active]:text-primary data-[state=inactive]:text-gray-600 data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-0 data-[state=active]:after:right-0 data-[state=active]:after:h-0.5 data-[state=active]:after:bg-primary whitespace-nowrap"
+                    >
+                        <div className="flex items-center gap-2">
+                            <Trophy className="w-4 h-4" />
+                            Achievements
+                        </div>
+                    </Tabs.Trigger>
+                    <Tabs.Trigger
+                        value="resources"
+                        className="pb-3 px-1 text-sm font-medium transition-colors relative data-[state=active]:text-primary data-[state=inactive]:text-gray-600 data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-0 data-[state=active]:after:right-0 data-[state=active]:after:h-0.5 data-[state=active]:after:bg-primary whitespace-nowrap"
+                    >
+                        <div className="flex items-center gap-2">
+                            <BookOpen className="w-4 h-4" />
+                            Resources
                         </div>
                     </Tabs.Trigger>
                 </Tabs.List>
@@ -132,7 +230,6 @@ export default function TribeDetails({ tribe, onBack }) {
                                 <h3 className="text-lg font-semibold text-gray-900">Tribe Rituals</h3>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {/* Daily Standup */}
                                 <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                                     <div className="flex items-center justify-between mb-2">
                                         <h4 className="font-semibold text-gray-900">Daily Standup</h4>
@@ -140,8 +237,6 @@ export default function TribeDetails({ tribe, onBack }) {
                                     </div>
                                     <p className="text-sm text-gray-600">Quick 15-min sync on progress and blockers.</p>
                                 </div>
-
-                                {/* Weekly Review */}
                                 <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                                     <div className="flex items-center justify-between mb-2">
                                         <h4 className="font-semibold text-gray-900">Weekly Review</h4>
@@ -149,8 +244,6 @@ export default function TribeDetails({ tribe, onBack }) {
                                     </div>
                                     <p className="text-sm text-gray-600">Reflect on the past week's wins and learnings.</p>
                                 </div>
-
-                                {/* Deep Work Sprint */}
                                 <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                                     <div className="flex items-center justify-between mb-2">
                                         <h4 className="font-semibold text-gray-900">Deep Work Sprint</h4>
@@ -162,14 +255,7 @@ export default function TribeDetails({ tribe, onBack }) {
                         </CardContent>
                     </Card>
 
-                    {/* Missed Ritual Message */}
-                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                        <p className="text-sm text-purple-800">
-                            💜 Missed a ritual? No worries! Resume whenever you are ready. Consistency &gt; Perfection.
-                        </p>
-                    </div>
-
-                    {/* Buddy Mode */}
+                    {/* Buddy Mode Preview */}
                     <Card>
                         <CardContent className="pt-6">
                             <div className="flex items-center gap-2 mb-4">
@@ -180,60 +266,88 @@ export default function TribeDetails({ tribe, onBack }) {
                                 <div className="flex items-center gap-3">
                                     <div className="flex items-center gap-2">
                                         <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                                            Y
+                                            {currentUser.avatar}
                                         </div>
                                         <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-medium -ml-2">
-                                            A
+                                            AC
                                         </div>
                                     </div>
                                     <div>
-                                        <p className="font-medium text-gray-900">Active Session</p>
-                                        <p className="text-sm text-gray-600">Paired for accountability</p>
+                                        <p className="font-medium text-gray-900">Ready to pair up</p>
+                                        <p className="text-sm text-gray-600">Find a buddy for focused work</p>
                                     </div>
                                 </div>
-                                <Badge variant="success" className="bg-green-100 text-green-700">Active</Badge>
+                                <Button onClick={() => setActiveTab('buddy')}>Start Session</Button>
                             </div>
                         </CardContent>
                     </Card>
                 </Tabs.Content>
 
-                {/* Problem Solving Tab */}
-                <Tabs.Content value="problem-solving" className="mt-6">
-                    <Card className="py-16">
-                        <div className="text-center">
-                            <div className="text-6xl mb-4">💡</div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">Problem Solving</h3>
-                            <p className="text-gray-600">
-                                Collaborate on challenges and share solutions with your tribe.
-                            </p>
-                        </div>
-                    </Card>
-                </Tabs.Content>
-
-                {/* Tribe Chat Tab */}
+                {/* Chat Tab */}
                 <Tabs.Content value="chat" className="mt-6">
-                    <Card className="py-16">
-                        <div className="text-center">
-                            <div className="text-6xl mb-4">💬</div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">Tribe Chat</h3>
-                            <p className="text-gray-600">
-                                Stay connected with your tribe members through group chat.
-                            </p>
-                        </div>
-                    </Card>
+                    <TribeChat
+                        tribeId={tribe.id}
+                        currentUser={currentUser}
+                        messages={chatMessages}
+                    />
                 </Tabs.Content>
 
                 {/* Members Tab */}
                 <Tabs.Content value="members" className="mt-6">
-                    <Card className="py-16">
-                        <div className="text-center">
-                            <div className="text-6xl mb-4">👥</div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">Tribe Members</h3>
-                            <p className="text-gray-600">
-                                View and manage all members of your tribe.
-                            </p>
-                        </div>
-                    </Card>
+                    <TribeMembers
+                        tribeId={tribe.id}
+                        members={tribeMembers}
+                        currentUser={currentUser}
+                    />
+                </Tabs.Content>
+
+                {/* Problem Solving Tab */}
+                <Tabs.Content value="problem-solving" className="mt-6">
+                    <ProblemSolvingBoard
+                        tribeId={tribe.id}
+                        problems={problems}
+                        currentUser={currentUser}
+                    />
+                </Tabs.Content>
+
+                {/* Buddy Mode Tab */}
+                <Tabs.Content value="buddy" className="mt-6">
+                    <BuddyMode
+                        tribeId={tribe.id}
+                        members={tribeMembers}
+                        currentUser={currentUser}
+                    />
+                </Tabs.Content>
+
+                {/* Rituals Tab */}
+                <Tabs.Content value="rituals" className="mt-6">
+                    <RitualScheduler
+                        tribeId={tribe.id}
+                        currentUser={currentUser}
+                    />
+                </Tabs.Content>
+
+                {/* Analytics Tab */}
+                <Tabs.Content value="analytics" className="mt-6">
+                    <TribeAnalytics
+                        tribe={tribe}
+                        members={tribeMembers}
+                    />
+                </Tabs.Content>
+
+                {/* Achievements Tab */}
+                <Tabs.Content value="achievements" className="mt-6">
+                    <Achievements
+                        tribeId={tribe.id}
+                    />
+                </Tabs.Content>
+
+                {/* Resources Tab */}
+                <Tabs.Content value="resources" className="mt-6">
+                    <ResourceLibrary
+                        tribeId={tribe.id}
+                        currentUser={currentUser}
+                    />
                 </Tabs.Content>
             </Tabs.Root>
         </div>

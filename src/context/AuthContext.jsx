@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { authAPI } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -11,35 +12,85 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Check localStorage for existing session
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
-        }
-        setLoading(false);
+        // Check for existing token and load user
+        const loadUser = async () => {
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    // Try to load user from localStorage first (for mock mode)
+                    const storedUser = localStorage.getItem('user');
+                    if (storedUser) {
+                        setUser(JSON.parse(storedUser));
+                    } else {
+                        // Fallback to API call (for real mode)
+                        const userData = await authAPI.getCurrentUser();
+                        setUser(userData);
+                    }
+                } catch (error) {
+                    console.error('Failed to load user:', error);
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                }
+            }
+            setLoading(false);
+        };
+
+        loadUser();
     }, []);
 
-    const login = (email, password) => {
-        // Mock login - in a real app, this would verify credentials with backend
-        const mockUser = {
-            id: '1',
-            name: 'John',
-            email: email,
-            avatar: 'JD',
-            checkInStreak: 5
-        };
-        setUser(mockUser);
-        localStorage.setItem('user', JSON.stringify(mockUser));
-        return Promise.resolve(mockUser);
+    const register = async (name, email, password) => {
+        try {
+            // DEMO MODE: Accept any credentials and create mock user data
+            const mockData = {
+                _id: 'demo-user-' + Date.now(),
+                name: name,
+                email: email,
+                token: 'demo-token-' + Date.now()
+            };
+
+            setUser(mockData);
+            localStorage.setItem('token', mockData.token);
+            localStorage.setItem('user', JSON.stringify(mockData));
+            return mockData;
+        } catch (error) {
+            throw error;
+        }
     };
 
-    const logout = () => {
-        setUser(null);
-        localStorage.removeItem('user');
+    const login = async (email, password) => {
+        try {
+            // DEMO MODE: Accept any credentials and create mock user data
+            const mockData = {
+                _id: 'demo-user-' + Date.now(),
+                name: email.split('@')[0], // Use email prefix as name
+                email: email,
+                token: 'demo-token-' + Date.now()
+            };
+
+            setUser(mockData);
+            localStorage.setItem('token', mockData.token);
+            localStorage.setItem('user', JSON.stringify(mockData));
+            return mockData;
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    const logout = async () => {
+        try {
+            await authAPI.logout();
+        } catch (error) {
+            console.error('Logout error:', error);
+        } finally {
+            setUser(null);
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+        }
     };
 
     const value = {
         user,
+        register,
         login,
         logout,
         loading
@@ -51,3 +102,4 @@ export function AuthProvider({ children }) {
         </AuthContext.Provider>
     );
 }
+
