@@ -1,6 +1,7 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
 import FocusSession from '../models/FocusSession.js';
+import { mockFocusSessions, mockUser } from '../utils/mockData.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -14,6 +15,14 @@ router.use(protect);
 router.get('/', async (req, res) => {
     try {
         const { status, limit } = req.query;
+
+        if (process.env.USE_MOCK_DATA === 'true') {
+            let sessions = [...mockFocusSessions];
+            if (status) sessions = sessions.filter(s => s.status === status);
+            sessions.sort((a, b) => new Date(b.startTime || b.createdAt) - new Date(a.startTime || a.createdAt));
+            if (limit) sessions = sessions.slice(0, parseInt(limit));
+            return res.json(sessions);
+        }
 
         const query = { user: req.user._id };
         if (status) query.status = status;
@@ -41,6 +50,12 @@ router.get('/', async (req, res) => {
 // @access  Private
 router.get('/:id', async (req, res) => {
     try {
+        if (process.env.USE_MOCK_DATA === 'true') {
+            const session = mockFocusSessions.find(s => s._id === req.params.id);
+            if (!session) return res.status(404).json({ message: 'Focus session not found' });
+            return res.json(session);
+        }
+
         const session = await FocusSession.findOne({
             _id: req.params.id,
             user: req.user._id,
@@ -75,6 +90,20 @@ router.post(
         }
 
         try {
+            if (process.env.USE_MOCK_DATA === 'true') {
+                const newSession = {
+                    _id: `session-${Date.now()}`,
+                    ...req.body,
+                    user: req.user._id,
+                    status: 'active',
+                    startTime: new Date().toISOString(),
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                mockFocusSessions.push(newSession);
+                return res.status(201).json(newSession);
+            }
+
             const session = await FocusSession.create({
                 ...req.body,
                 user: req.user._id,
@@ -96,6 +125,15 @@ router.post(
 // @access  Private
 router.put('/:id', async (req, res) => {
     try {
+        if (process.env.USE_MOCK_DATA === 'true') {
+            const index = mockFocusSessions.findIndex(s => s._id === req.params.id);
+            if (index === -1) return res.status(404).json({ message: 'Focus session not found' });
+
+            const updatedSession = { ...mockFocusSessions[index], ...req.body, updatedAt: new Date().toISOString() };
+            mockFocusSessions[index] = updatedSession;
+            return res.json(updatedSession);
+        }
+
         const session = await FocusSession.findOne({
             _id: req.params.id,
             user: req.user._id,
@@ -129,6 +167,17 @@ router.put('/:id', async (req, res) => {
 // @access  Private
 router.patch('/:id/complete', async (req, res) => {
     try {
+        if (process.env.USE_MOCK_DATA === 'true') {
+            const index = mockFocusSessions.findIndex(s => s._id === req.params.id);
+            if (index === -1) return res.status(404).json({ message: 'Focus session not found' });
+
+            mockFocusSessions[index].status = 'completed';
+            if (req.body.duration) mockFocusSessions[index].duration = req.body.duration;
+            mockFocusSessions[index].endTime = new Date().toISOString();
+
+            return res.json(mockFocusSessions[index]);
+        }
+
         const session = await FocusSession.findOne({
             _id: req.params.id,
             user: req.user._id,
@@ -161,6 +210,14 @@ router.patch('/:id/complete', async (req, res) => {
 // @access  Private
 router.delete('/:id', async (req, res) => {
     try {
+        if (process.env.USE_MOCK_DATA === 'true') {
+            const index = mockFocusSessions.findIndex(s => s._id === req.params.id);
+            if (index === -1) return res.status(404).json({ message: 'Focus session not found' });
+
+            mockFocusSessions.splice(index, 1);
+            return res.json({ message: 'Focus session deleted successfully' });
+        }
+
         const session = await FocusSession.findOneAndDelete({
             _id: req.params.id,
             user: req.user._id,

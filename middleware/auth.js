@@ -1,7 +1,14 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import { mockUser } from '../utils/mockData.js';
 
 export const protect = async (req, res, next) => {
+    // If mock data is enabled, use mock user
+    if (process.env.USE_MOCK_DATA === 'true') {
+        req.user = mockUser;
+        return next();
+    }
+
     let token;
 
     // Check for token in Authorization header

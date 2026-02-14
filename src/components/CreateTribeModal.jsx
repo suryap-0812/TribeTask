@@ -2,6 +2,8 @@ import { useState } from 'react'
 import Modal, { ModalClose } from './ui/Modal'
 import { Input, Textarea, Label } from './ui/Input'
 import Button from './ui/Button'
+import { tribesAPI } from '../services/api'
+import { Loader2 } from 'lucide-react'
 
 const TRIBE_COLORS = [
     { name: 'Blue', value: 'blue', class: 'bg-blue-500' },
@@ -15,13 +17,14 @@ const TRIBE_COLORS = [
 ]
 
 export default function CreateTribeModal({ open, onOpenChange, onCreateTribe }) {
+    const [loading, setLoading] = useState(false)
     const [formData, setFormData] = useState({
         name: '',
         description: '',
         color: 'blue',
     })
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
 
         if (!formData.name.trim()) {
@@ -29,27 +32,29 @@ export default function CreateTribeModal({ open, onOpenChange, onCreateTribe }) 
             return
         }
 
-        const newTribe = {
-            id: Date.now(),
-            name: formData.name,
-            description: formData.description,
-            members: 1, // Creator is the first member
-            activeTasks: 0,
-            activeToday: 0,
-            role: 'Leader',
-            color: formData.color,
+        try {
+            setLoading(true)
+            await tribesAPI.createTribe({
+                name: formData.name,
+                description: formData.description,
+                color: formData.color
+            })
+
+            onCreateTribe() // This will trigger reload in parent
+
+            // Reset form
+            setFormData({
+                name: '',
+                description: '',
+                color: 'blue',
+            })
+            onOpenChange(false)
+        } catch (error) {
+            console.error('Failed to create tribe:', error)
+            alert('Failed to create tribe. Please try again.')
+        } finally {
+            setLoading(false)
         }
-
-        onCreateTribe(newTribe)
-
-        // Reset form
-        setFormData({
-            name: '',
-            description: '',
-            color: 'blue',
-        })
-
-        onOpenChange(false)
     }
 
     return (
@@ -68,6 +73,7 @@ export default function CreateTribeModal({ open, onOpenChange, onCreateTribe }) 
                         className="mt-1"
                         autoFocus
                         maxLength={50}
+                        disabled={loading}
                     />
                     <p className="text-xs text-gray-500 mt-1">{formData.name.length}/50 characters</p>
                 </div>
@@ -83,6 +89,7 @@ export default function CreateTribeModal({ open, onOpenChange, onCreateTribe }) 
                         className="mt-1"
                         rows={3}
                         maxLength={200}
+                        disabled={loading}
                     />
                     <p className="text-xs text-gray-500 mt-1">{formData.description.length}/200 characters</p>
                 </div>
@@ -97,9 +104,10 @@ export default function CreateTribeModal({ open, onOpenChange, onCreateTribe }) 
                                 key={color.value}
                                 type="button"
                                 onClick={() => setFormData({ ...formData, color: color.value })}
+                                disabled={loading}
                                 className={`flex items-center gap-2 p-2 rounded-lg border-2 transition-all ${formData.color === color.value
-                                        ? 'border-primary bg-primary-50'
-                                        : 'border-gray-200 hover:border-gray-300'
+                                    ? 'border-primary bg-primary-50'
+                                    : 'border-gray-200 hover:border-gray-300'
                                     }`}
                             >
                                 <div className={`w-6 h-6 rounded-full ${color.class}`} />
@@ -119,12 +127,19 @@ export default function CreateTribeModal({ open, onOpenChange, onCreateTribe }) 
                 {/* Actions */}
                 <div className="flex justify-end gap-3 pt-4">
                     <ModalClose asChild>
-                        <Button type="button" variant="ghost">
+                        <Button type="button" variant="ghost" disabled={loading}>
                             Cancel
                         </Button>
                     </ModalClose>
-                    <Button type="submit" variant="primary">
-                        Create Tribe
+                    <Button type="submit" variant="primary" disabled={loading}>
+                        {loading ? (
+                            <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Creating...
+                            </>
+                        ) : (
+                            'Create Tribe'
+                        )}
                     </Button>
                 </div>
             </form>

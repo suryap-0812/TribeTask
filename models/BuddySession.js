@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose')
 
 const buddySessionSchema = new mongoose.Schema({
     tribe: {
@@ -41,7 +41,7 @@ const buddySessionSchema = new mongoose.Schema({
     }
 }, {
     timestamps: true
-});
+})
 
 // Calculate duration when session ends
 buddySessionSchema.methods.calculateDuration = function () {
@@ -54,9 +54,8 @@ buddySessionSchema.methods.calculateDuration = function () {
 }
 
 // Index for efficient queries
-buddySessionSchema.index({ tribe: 1, status: 1 });
-buddySessionSchema.index({ participants: 1 });
-buddySessionSchema.index({ startTime: -1 });
+buddySessionSchema.index({ tribe: 1, status: 1 })
+buddySessionSchema.index({ participants: 1 })
+buddySessionSchema.index({ startTime: -1 })
 
-const BuddySession = mongoose.model('BuddySession', buddySessionSchema);
-export default BuddySession;
+module.exports = mongoose.model('BuddySession', buddySessionSchema)

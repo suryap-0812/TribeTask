@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
-import { Star, Users, UserCheck, Crown } from 'lucide-react'
+import { Star, Users, UserCheck, Crown, Loader2 } from 'lucide-react'
 import Modal, { ModalClose } from './ui/Modal'
 import { Input, Textarea, Label } from './ui/Input'
 import Button from './ui/Button'
-import { tribesAPI } from '../services/api'
+import { tribesAPI, tasksAPI } from '../services/api'
 
 export default function CreateTaskModal({ open, onOpenChange, onCreateTask }) {
     const [tribes, setTribes] = useState([])
+    const [loading, setLoading] = useState(false)
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -36,7 +37,7 @@ export default function CreateTaskModal({ open, onOpenChange, onCreateTask }) {
         }
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
 
         if (!formData.title.trim()) {
@@ -55,35 +56,45 @@ export default function CreateTaskModal({ open, onOpenChange, onCreateTask }) {
             title: formData.title,
             description: formData.description,
             priority: formData.priority,
-            status: 'pending',
             dueDate: formData.dueDate ? new Date(formData.dueDate) : new Date(),
-            tribe: formData.taskType === 'tribe' ? formData.tribe : null,
-            tribeRole: formData.taskType === 'tribe' ? selectedTribe?.role : null,
+            tribeID: formData.taskType === 'tribe' ? selectedTribe?.id : null,
+            tribe: formData.taskType === 'tribe' ? selectedTribe?.name : null,
             isGroupTask: formData.taskType === 'tribe' ? formData.isGroupTask : false,
             assignedRole: formData.assignedRole,
-            completed: false,
             starred: formData.starred,
-            completedAt: null,
             tags: formData.isGroupTask ? ['GROUP'] : [],
         }
 
-        onCreateTask(newTask)
+        try {
+            setLoading(true)
+            await tasksAPI.createTask(newTask)
 
-        // Reset form
-        setFormData({
-            title: '',
-            description: '',
-            dueDate: '',
-            priority: 'medium',
-            taskType: 'personal',
-            tribe: '',
-            tribeRole: '',
-            isGroupTask: false,
-            assignedRole: 'member',
-            starred: false,
-        })
+            // Call the callback to refresh parent data
+            if (onCreateTask) {
+                onCreateTask()
+            }
 
-        onOpenChange(false)
+            // Reset form
+            setFormData({
+                title: '',
+                description: '',
+                dueDate: '',
+                priority: 'medium',
+                taskType: 'personal',
+                tribe: '',
+                tribeRole: '',
+                isGroupTask: false,
+                assignedRole: 'member',
+                starred: false,
+            })
+
+            onOpenChange(false)
+        } catch (error) {
+            console.error('Failed to create task:', error)
+            alert('Failed to create task. Please try again.')
+        } finally {
+            setLoading(false)
+        }
     }
 
     const selectedTribe = tribes.find(t => t.name === formData.tribe)
@@ -103,6 +114,7 @@ export default function CreateTaskModal({ open, onOpenChange, onCreateTask }) {
                         onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                         className="mt-1"
                         autoFocus
+                        disabled={loading}
                     />
                 </div>
 
@@ -116,6 +128,7 @@ export default function CreateTaskModal({ open, onOpenChange, onCreateTask }) {
                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                         className="mt-1"
                         rows={3}
+                        disabled={loading}
                     />
                 </div>
 
@@ -129,6 +142,7 @@ export default function CreateTaskModal({ open, onOpenChange, onCreateTask }) {
                             value={formData.dueDate}
                             onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                             className="mt-1"
+                            disabled={loading}
                         />
                     </div>
 
@@ -140,6 +154,7 @@ export default function CreateTaskModal({ open, onOpenChange, onCreateTask }) {
                                     key={priority}
                                     type="button"
                                     onClick={() => setFormData({ ...formData, priority })}
+                                    disabled={loading}
                                     className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${formData.priority === priority
                                         ? 'bg-primary text-white border-primary'
                                         : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
@@ -169,6 +184,7 @@ export default function CreateTaskModal({ open, onOpenChange, onCreateTask }) {
                                     isGroupTask: false,
                                     assignedRole: 'personal'
                                 })}
+                                disabled={loading}
                                 className="w-4 h-4 text-primary focus:ring-primary"
                             />
                             <span className="text-sm text-gray-700">Personal</span>
@@ -184,6 +200,7 @@ export default function CreateTaskModal({ open, onOpenChange, onCreateTask }) {
                                     taskType: e.target.value,
                                     assignedRole: 'member'
                                 })}
+                                disabled={loading}
                                 className="w-4 h-4 text-primary focus:ring-primary"
                             />
                             <span className="text-sm text-gray-700">Tribe</span>
@@ -209,6 +226,7 @@ export default function CreateTaskModal({ open, onOpenChange, onCreateTask }) {
                                         tribeRole: selected?.role || ''
                                     })
                                 }}
+                                disabled={loading}
                                 className="mt-1 w-full h-10 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                             >
                                 <option value="">Choose a tribe...</option>
@@ -252,6 +270,7 @@ export default function CreateTaskModal({ open, onOpenChange, onCreateTask }) {
                                     type="checkbox"
                                     checked={formData.isGroupTask}
                                     onChange={(e) => setFormData({ ...formData, isGroupTask: e.target.checked })}
+                                    disabled={loading}
                                     className="w-4 h-4 rounded text-primary focus:ring-primary"
                                 />
                                 <div className="flex-1">
@@ -273,6 +292,7 @@ export default function CreateTaskModal({ open, onOpenChange, onCreateTask }) {
                                 <button
                                     type="button"
                                     onClick={() => setFormData({ ...formData, assignedRole: 'member' })}
+                                    disabled={loading}
                                     className={`flex flex-col items-center gap-1 px-3 py-2.5 text-xs font-medium rounded-lg border transition-colors ${formData.assignedRole === 'member'
                                         ? 'bg-primary text-white border-primary'
                                         : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
@@ -285,12 +305,12 @@ export default function CreateTaskModal({ open, onOpenChange, onCreateTask }) {
                                 <button
                                     type="button"
                                     onClick={() => setFormData({ ...formData, assignedRole: 'leader' })}
-                                    disabled={selectedTribe?.role !== 'Leader'}
+                                    disabled={loading || selectedTribe?.role !== 'Leader'}
                                     className={`flex flex-col items-center gap-1 px-3 py-2.5 text-xs font-medium rounded-lg border transition-colors ${formData.assignedRole === 'leader'
-                                            ? 'bg-primary text-white border-primary'
-                                            : selectedTribe?.role !== 'Leader'
-                                                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                        ? 'bg-primary text-white border-primary'
+                                        : selectedTribe?.role !== 'Leader'
+                                            ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                                         }`}
                                 >
                                     <Crown className="w-4 h-4" />
@@ -300,12 +320,12 @@ export default function CreateTaskModal({ open, onOpenChange, onCreateTask }) {
                                 <button
                                     type="button"
                                     onClick={() => setFormData({ ...formData, assignedRole: 'delegate' })}
-                                    disabled={selectedTribe?.role !== 'Leader'}
+                                    disabled={loading || selectedTribe?.role !== 'Leader'}
                                     className={`flex flex-col items-center gap-1 px-3 py-2.5 text-xs font-medium rounded-lg border transition-colors ${formData.assignedRole === 'delegate'
-                                            ? 'bg-primary text-white border-primary'
-                                            : selectedTribe?.role !== 'Leader'
-                                                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                        ? 'bg-primary text-white border-primary'
+                                        : selectedTribe?.role !== 'Leader'
+                                            ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                                         }`}
                                 >
                                     <Users className="w-4 h-4" />
@@ -327,6 +347,7 @@ export default function CreateTaskModal({ open, onOpenChange, onCreateTask }) {
                     <button
                         type="button"
                         onClick={() => setFormData({ ...formData, starred: !formData.starred })}
+                        disabled={loading}
                         className="flex items-center gap-2 mt-1 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors border border-gray-200 w-full"
                     >
                         <Star className={`w-4 h-4 ${formData.starred ? 'fill-yellow-500 text-yellow-500' : 'text-gray-400'}`} />
@@ -337,12 +358,19 @@ export default function CreateTaskModal({ open, onOpenChange, onCreateTask }) {
                 {/* Actions */}
                 <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
                     <ModalClose asChild>
-                        <Button type="button" variant="ghost">
+                        <Button type="button" variant="ghost" disabled={loading}>
                             Cancel
                         </Button>
                     </ModalClose>
-                    <Button type="submit" variant="primary">
-                        Create Task
+                    <Button type="submit" variant="primary" disabled={loading}>
+                        {loading ? (
+                            <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Creating...
+                            </>
+                        ) : (
+                            'Create Task'
+                        )}
                     </Button>
                 </div>
             </form>

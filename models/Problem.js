@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose')
 
 const solutionSchema = new mongoose.Schema({
     author: {
@@ -25,7 +25,7 @@ const solutionSchema = new mongoose.Schema({
     }
 }, {
     timestamps: true
-});
+})
 
 const problemSchema = new mongoose.Schema({
     tribe: {
@@ -74,12 +74,11 @@ const problemSchema = new mongoose.Schema({
     }
 }, {
     timestamps: true
-});
+})
 
 // Index for efficient queries
-problemSchema.index({ tribe: 1, status: 1 });
-problemSchema.index({ creator: 1 });
-problemSchema.index({ category: 1 });
+problemSchema.index({ tribe: 1, status: 1 })
+problemSchema.index({ creator: 1 })
+problemSchema.index({ category: 1 })
 
-const Problem = mongoose.model('Problem', problemSchema);
-export default Problem;
+module.exports = mongoose.model('Problem', problemSchema)

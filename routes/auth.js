@@ -1,6 +1,7 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
 import User from '../models/User.js';
+import { mockUser } from '../utils/mockData.js';
 import { protect, generateToken } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -19,6 +20,13 @@ router.post(
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
+        }
+
+        if (process.env.USE_MOCK_DATA === 'true') {
+            return res.status(201).json({
+                ...mockUser,
+                token: 'mock-token-123'
+            });
         }
 
         const { name, email, password } = req.body;
@@ -67,6 +75,13 @@ router.post(
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
+        }
+
+        if (process.env.USE_MOCK_DATA === 'true') {
+            return res.json({
+                ...mockUser,
+                token: 'mock-token-123'
+            });
         }
 
         const { email, password } = req.body;

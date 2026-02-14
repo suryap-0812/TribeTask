@@ -3,6 +3,7 @@ import { body, validationResult } from 'express-validator';
 import Tribe from '../models/Tribe.js';
 import Task from '../models/Task.js';
 import User from '../models/User.js';
+import { mockTribes, mockTasks, mockUser } from '../utils/mockData.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -15,6 +16,23 @@ router.use(protect);
 // @access  Private
 router.get('/', async (req, res) => {
     try {
+        if (process.env.USE_MOCK_DATA === 'true') {
+            const tribesWithStats = mockTribes.map(tribe => {
+                // Check if user is a member
+                const member = tribe.members.includes(req.user._id) ? { role: 'Member' } : null; // simplified logic
+
+                // Simple mock stats
+                return {
+                    ...tribe,
+                    members: tribe.members.length,
+                    activeTasks: mockTasks.filter(t => t.tribe === tribe._id && !t.completed).length,
+                    activeToday: mockTasks.filter(t => t.tribe === tribe._id && !t.completed && new Date(t.dueDate).setHours(0, 0, 0, 0) === new Date().setHours(0, 0, 0, 0)).length,
+                    role: tribe.admin === req.user._id ? 'Leader' : 'Member'
+                };
+            });
+            return res.json(tribesWithStats);
+        }
+
         const tribes = await Tribe.find({
             'members.user': req.user._id,
         })
@@ -66,6 +84,22 @@ router.get('/', async (req, res) => {
 // @access  Private
 router.get('/:id', async (req, res) => {
     try {
+        if (process.env.USE_MOCK_DATA === 'true') {
+            const tribe = mockTribes.find(t => t._id === req.params.id);
+            if (!tribe) return res.status(404).json({ message: 'Tribe not found' });
+
+            // Expand members for detail view
+            const tribeDetail = {
+                ...tribe,
+                members: tribe.members.map(id => ({
+                    user: { _id: id, name: id === req.user._id ? req.user.name : 'Mock Member', email: 'mock@example.com', avatar: '' },
+                    role: tribe.admin === id ? 'Leader' : 'Member'
+                })),
+                createdBy: { _id: tribe.admin, name: 'Mock Admin', email: 'admin@example.com' }
+            };
+            return res.json(tribeDetail);
+        }
+
         const tribe = await Tribe.findById(req.params.id)
             .populate('members.user', 'name email avatar')
             .populate('createdBy', 'name email');
@@ -106,6 +140,22 @@ router.post(
         }
 
         try {
+            if (process.env.USE_MOCK_DATA === 'true') {
+                const newTribe = {
+                    _id: `tribe-${Date.now()}`,
+                    name: req.body.name,
+                    description: req.body.description,
+                    color: req.body.color || 'blue',
+                    members: [req.user._id],
+                    admin: req.user._id,
+                    isPrivate: false,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                mockTribes.push(newTribe);
+                return res.status(201).json(newTribe);
+            }
+
             const tribe = await Tribe.create({
                 name: req.body.name,
                 description: req.body.description,

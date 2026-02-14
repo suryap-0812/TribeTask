@@ -25,10 +25,22 @@ export default function Dashboard() {
         try {
             setLoading(true)
             const data = await statsAPI.getDashboardStats()
-            setStats(data)
-            setTasks(data.recentTasks || [])
+            if (data) {
+                setStats(data)
+                setTasks(data.recentTasks || [])
+            } else {
+                throw new Error('No data received')
+            }
         } catch (error) {
             console.error('Failed to load dashboard data:', error)
+            // Set default empty stats so UI still renders
+            setStats({
+                dueToday: 0,
+                focusTime: 0,
+                tasksProgress: { completed: 0, total: 0 },
+                activeTribes: 0
+            })
+            setTasks([])
         } finally {
             setLoading(false)
         }

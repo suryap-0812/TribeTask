@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose')
 
 const resourceSchema = new mongoose.Schema({
     tribe: {
@@ -45,12 +45,11 @@ const resourceSchema = new mongoose.Schema({
     }
 }, {
     timestamps: true
-});
+})
 
 // Index for efficient queries
-resourceSchema.index({ tribe: 1, type: 1 });
-resourceSchema.index({ uploader: 1 });
-resourceSchema.index({ category: 1 });
+resourceSchema.index({ tribe: 1, type: 1 })
+resourceSchema.index({ uploader: 1 })
+resourceSchema.index({ category: 1 })
 
-const Resource = mongoose.model('Resource', resourceSchema);
-export default Resource;
+module.exports = mongoose.model('Resource', resourceSchema)

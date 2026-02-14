@@ -1,6 +1,7 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
 import Task from '../models/Task.js';
+import { mockTasks } from '../utils/mockData.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -14,6 +15,15 @@ router.use(protect);
 router.get('/', async (req, res) => {
     try {
         const { status, tribe, priority, starred } = req.query;
+
+        if (process.env.USE_MOCK_DATA === 'true') {
+            let tasks = [...mockTasks];
+            if (status) tasks = tasks.filter(t => t.status === status);
+            if (tribe) tasks = tasks.filter(t => t.tribe === tribe);
+            if (priority) tasks = tasks.filter(t => t.priority === priority);
+            if (starred === 'true') tasks = tasks.filter(t => t.starred);
+            return res.json(tasks);
+        }
 
         // Build query
         const query = { user: req.user._id };
@@ -39,6 +49,12 @@ router.get('/', async (req, res) => {
 // @access  Private
 router.get('/:id', async (req, res) => {
     try {
+        if (process.env.USE_MOCK_DATA === 'true') {
+            const task = mockTasks.find(t => t._id === req.params.id);
+            if (!task) return res.status(404).json({ message: 'Task not found' });
+            return res.json(task);
+        }
+
         const task = await Task.findOne({
             _id: req.params.id,
             user: req.user._id,
@@ -72,6 +88,18 @@ router.post(
         }
 
         try {
+            if (process.env.USE_MOCK_DATA === 'true') {
+                const newTask = {
+                    _id: `task-${Date.now()}`,
+                    ...req.body,
+                    user: req.user._id,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                mockTasks.push(newTask);
+                return res.status(201).json(newTask);
+            }
+
             const task = await Task.create({
                 ...req.body,
                 user: req.user._id,
@@ -92,6 +120,15 @@ router.post(
 // @access  Private
 router.put('/:id', async (req, res) => {
     try {
+        if (process.env.USE_MOCK_DATA === 'true') {
+            const taskIndex = mockTasks.findIndex(t => t._id === req.params.id);
+            if (taskIndex === -1) return res.status(404).json({ message: 'Task not found' });
+
+            const updatedTask = { ...mockTasks[taskIndex], ...req.body, updatedAt: new Date().toISOString() };
+            mockTasks[taskIndex] = updatedTask;
+            return res.json(updatedTask);
+        }
+
         const task = await Task.findOne({
             _id: req.params.id,
             user: req.user._id,
@@ -124,6 +161,21 @@ router.put('/:id', async (req, res) => {
 // @access  Private
 router.patch('/:id/complete', async (req, res) => {
     try {
+        if (process.env.USE_MOCK_DATA === 'true') {
+            const taskIndex = mockTasks.findIndex(t => t._id === req.params.id);
+            if (taskIndex === -1) return res.status(404).json({ message: 'Task not found' });
+
+            mockTasks[taskIndex].completed = !mockTasks[taskIndex].completed;
+            if (mockTasks[taskIndex].completed) {
+                mockTasks[taskIndex].status = 'completed';
+                mockTasks[taskIndex].completedAt = new Date().toISOString();
+            } else {
+                mockTasks[taskIndex].status = 'pending';
+                mockTasks[taskIndex].completedAt = null;
+            }
+            return res.json(mockTasks[taskIndex]);
+        }
+
         const task = await Task.findOne({
             _id: req.params.id,
             user: req.user._id,
@@ -149,6 +201,14 @@ router.patch('/:id/complete', async (req, res) => {
 // @access  Private
 router.patch('/:id/star', async (req, res) => {
     try {
+        if (process.env.USE_MOCK_DATA === 'true') {
+            const taskIndex = mockTasks.findIndex(t => t._id === req.params.id);
+            if (taskIndex === -1) return res.status(404).json({ message: 'Task not found' });
+
+            mockTasks[taskIndex].starred = !mockTasks[taskIndex].starred;
+            return res.json(mockTasks[taskIndex]);
+        }
+
         const task = await Task.findOne({
             _id: req.params.id,
             user: req.user._id,
@@ -174,6 +234,14 @@ router.patch('/:id/star', async (req, res) => {
 // @access  Private
 router.delete('/:id', async (req, res) => {
     try {
+        if (process.env.USE_MOCK_DATA === 'true') {
+            const taskIndex = mockTasks.findIndex(t => t._id === req.params.id);
+            if (taskIndex === -1) return res.status(404).json({ message: 'Task not found' });
+
+            mockTasks.splice(taskIndex, 1);
+            return res.json({ message: 'Task deleted successfully' });
+        }
+
         const task = await Task.findOneAndDelete({
             _id: req.params.id,
             user: req.user._id,

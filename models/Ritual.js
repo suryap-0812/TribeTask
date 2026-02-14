@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose')
 
 const attendanceSchema = new mongoose.Schema({
     userId: {
@@ -11,7 +11,7 @@ const attendanceSchema = new mongoose.Schema({
         required: true,
         default: Date.now
     }
-}, { _id: false });
+}, { _id: false })
 
 const ritualSchema = new mongoose.Schema({
     tribe: {
@@ -66,11 +66,10 @@ const ritualSchema = new mongoose.Schema({
     }
 }, {
     timestamps: true
-});
+})
 
 // Index for efficient queries
-ritualSchema.index({ tribe: 1, isActive: 1 });
-ritualSchema.index({ nextOccurrence: 1 });
+ritualSchema.index({ tribe: 1, isActive: 1 })
+ritualSchema.index({ nextOccurrence: 1 })
 
-const Ritual = mongoose.model('Ritual', ritualSchema);
-export default Ritual;
+module.exports = mongoose.model('Ritual', ritualSchema)

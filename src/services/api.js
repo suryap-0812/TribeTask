@@ -1,16 +1,4 @@
 import axios from 'axios';
-import mockApi, {
-    mockAuthAPI,
-    mockTasksAPI,
-    mockTribesAPI,
-    mockFocusSessionsAPI,
-    mockStatsAPI
-} from './mockApi';
-
-// Check if we should use mock data (defaults to true if env var not set)
-const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA !== 'false';
-
-console.log('🔧 API Mode:', USE_MOCK_DATA ? 'MOCK DATA' : 'REAL API');
 
 // Real API implementation
 const api = axios.create({
@@ -42,9 +30,12 @@ api.interceptors.response.use(
 
         // If unauthorized, clear token and redirect to login
         if (error.response?.status === 401) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = '/login';
+            // Only redirect if not already on login page to avoid loops
+            if (!window.location.pathname.includes('/login')) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+            }
         }
 
         return Promise.reject(new Error(message));
@@ -52,7 +43,7 @@ api.interceptors.response.use(
 );
 
 // Real Auth API
-const realAuthAPI = {
+export const authAPI = {
     register: (data) => api.post('/auth/register', data),
     login: (data) => api.post('/auth/login', data),
     logout: () => api.post('/auth/logout'),
@@ -60,7 +51,7 @@ const realAuthAPI = {
 };
 
 // Real Tasks API
-const realTasksAPI = {
+export const tasksAPI = {
     getTasks: (params) => api.get('/tasks', { params }),
     getTask: (id) => api.get(`/tasks/${id}`),
     createTask: (data) => api.post('/tasks', data),
@@ -71,7 +62,7 @@ const realTasksAPI = {
 };
 
 // Real Tribes API
-const realTribesAPI = {
+export const tribesAPI = {
     getTribes: () => api.get('/tribes'),
     getTribe: (id) => api.get(`/tribes/${id}`),
     createTribe: (data) => api.post('/tribes', data),
@@ -118,7 +109,7 @@ const realTribesAPI = {
 };
 
 // Real Focus Sessions API
-const realFocusSessionsAPI = {
+export const focusSessionsAPI = {
     getFocusSessions: (params) => api.get('/focus-sessions', { params }),
     getFocusSession: (id) => api.get(`/focus-sessions/${id}`),
     createFocusSession: (data) => api.post('/focus-sessions', data),
@@ -128,16 +119,9 @@ const realFocusSessionsAPI = {
 };
 
 // Real Stats API
-const realStatsAPI = {
+export const statsAPI = {
     getDashboardStats: () => api.get('/stats/dashboard'),
     getAnalytics: () => api.get('/stats/analytics'),
 };
 
-// Export either mock or real APIs based on environment
-export const authAPI = USE_MOCK_DATA ? mockAuthAPI : realAuthAPI;
-export const tasksAPI = USE_MOCK_DATA ? mockTasksAPI : realTasksAPI;
-export const tribesAPI = USE_MOCK_DATA ? mockTribesAPI : realTribesAPI;
-export const focusSessionsAPI = USE_MOCK_DATA ? mockFocusSessionsAPI : realFocusSessionsAPI;
-export const statsAPI = USE_MOCK_DATA ? mockStatsAPI : realStatsAPI;
-
-export default USE_MOCK_DATA ? mockApi : api;
+export default api;

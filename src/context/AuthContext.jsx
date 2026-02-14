@@ -40,38 +40,26 @@ export function AuthProvider({ children }) {
 
     const register = async (name, email, password) => {
         try {
-            // DEMO MODE: Accept any credentials and create mock user data
-            const mockData = {
-                _id: 'demo-user-' + Date.now(),
-                name: name,
-                email: email,
-                token: 'demo-token-' + Date.now()
-            };
-
-            setUser(mockData);
-            localStorage.setItem('token', mockData.token);
-            localStorage.setItem('user', JSON.stringify(mockData));
-            return mockData;
+            const data = await authAPI.register({ name, email, password });
+            setUser(data.user);
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            return data.user;
         } catch (error) {
+            console.error('Registration failed:', error);
             throw error;
         }
     };
 
     const login = async (email, password) => {
         try {
-            // DEMO MODE: Accept any credentials and create mock user data
-            const mockData = {
-                _id: 'demo-user-' + Date.now(),
-                name: email.split('@')[0], // Use email prefix as name
-                email: email,
-                token: 'demo-token-' + Date.now()
-            };
-
-            setUser(mockData);
-            localStorage.setItem('token', mockData.token);
-            localStorage.setItem('user', JSON.stringify(mockData));
-            return mockData;
+            const data = await authAPI.login({ email, password });
+            setUser(data.user);
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            return data.user;
         } catch (error) {
+            console.error('Login failed:', error);
             throw error;
         }
     };

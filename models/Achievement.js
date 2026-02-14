@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose')
 
 const achievementDefinitionSchema = new mongoose.Schema({
     name: {
@@ -34,7 +34,7 @@ const achievementDefinitionSchema = new mongoose.Schema({
     }
 }, {
     timestamps: true
-});
+})
 
 const userAchievementSchema = new mongoose.Schema({
     user: {
@@ -67,16 +67,16 @@ const userAchievementSchema = new mongoose.Schema({
     }
 }, {
     timestamps: true
-});
+})
 
 // Index for efficient queries
-userAchievementSchema.index({ user: 1, tribe: 1 });
-userAchievementSchema.index({ achievement: 1 });
+userAchievementSchema.index({ user: 1, tribe: 1 })
+userAchievementSchema.index({ achievement: 1 })
 
-const AchievementDefinition = mongoose.model('AchievementDefinition', achievementDefinitionSchema);
-const UserAchievement = mongoose.model('UserAchievement', userAchievementSchema);
+const AchievementDefinition = mongoose.model('AchievementDefinition', achievementDefinitionSchema)
+const UserAchievement = mongoose.model('UserAchievement', userAchievementSchema)
 
-export {
+module.exports = {
     AchievementDefinition,
     UserAchievement
-};
+}
