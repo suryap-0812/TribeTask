@@ -57,8 +57,8 @@ export default function CreateTaskModal({ open, onOpenChange, onCreateTask }) {
             description: formData.description,
             priority: formData.priority,
             dueDate: formData.dueDate ? new Date(formData.dueDate) : new Date(),
-            tribeID: formData.taskType === 'tribe' ? selectedTribe?.id : null,
-            tribe: formData.taskType === 'tribe' ? selectedTribe?.name : null,
+            // Backend expects 'tribe' to be the ObjectId
+            tribe: formData.taskType === 'tribe' ? selectedTribe?._id || selectedTribe?.id : null,
             isGroupTask: formData.taskType === 'tribe' ? formData.isGroupTask : false,
             assignedRole: formData.assignedRole,
             starred: formData.starred,
@@ -91,7 +91,8 @@ export default function CreateTaskModal({ open, onOpenChange, onCreateTask }) {
             onOpenChange(false)
         } catch (error) {
             console.error('Failed to create task:', error)
-            alert('Failed to create task. Please try again.')
+            const message = error.response?.data?.message || error.message || 'Failed to create task'
+            alert(`Error: ${message}`)
         } finally {
             setLoading(false)
         }

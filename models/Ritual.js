@@ -1,4 +1,4 @@
-const mongoose = require('mongoose')
+import mongoose from 'mongoose';
 
 const attendanceSchema = new mongoose.Schema({
     userId: {
@@ -72,4 +72,6 @@ const ritualSchema = new mongoose.Schema({
 ritualSchema.index({ tribe: 1, isActive: 1 })
 ritualSchema.index({ nextOccurrence: 1 })
 
-module.exports = mongoose.model('Ritual', ritualSchema)
+const Ritual = mongoose.model('Ritual', ritualSchema);
+
+export default Ritual;

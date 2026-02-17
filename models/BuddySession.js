@@ -1,4 +1,4 @@
-const mongoose = require('mongoose')
+import mongoose from 'mongoose';
 
 const buddySessionSchema = new mongoose.Schema({
     tribe: {
@@ -58,4 +58,6 @@ buddySessionSchema.index({ tribe: 1, status: 1 })
 buddySessionSchema.index({ participants: 1 })
 buddySessionSchema.index({ startTime: -1 })
 
-module.exports = mongoose.model('BuddySession', buddySessionSchema)
+const BuddySession = mongoose.model('BuddySession', buddySessionSchema);
+
+export default BuddySession;

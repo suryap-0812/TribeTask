@@ -58,18 +58,18 @@ const userSchema = new mongoose.Schema(
 );
 
 // Hash password before saving
-userSchema.pre('save', async function (next) {
+// Hash password before saving
+userSchema.pre('save', async function () {
     // Only hash if password is modified
     if (!this.isModified('password')) {
-        return next();
+        return;
     }
 
     try {
         const salt = await bcrypt.genSalt(10);
         this.password = await bcrypt.hash(this.password, salt);
-        next();
     } catch (error) {
-        next(error);
+        throw new Error(error);
     }
 });
 
@@ -82,18 +82,18 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
     }
 };
 
-// Update avatar when name changes
-userSchema.pre('save', function (next) {
-    if (this.isModified('name') && !this.isModified('avatar')) {
-        this.avatar = this.name
-            .split(' ')
-            .map((n) => n[0])
-            .join('')
-            .toUpperCase()
-            .slice(0, 2);
-    }
-    next();
-});
+// Update avatar when name changes - Commented out for debugging
+// userSchema.pre('save', function (next) {
+//     if (this.isModified('name') && !this.isModified('avatar')) {
+//         this.avatar = this.name
+//             .split(' ')
+//             .map((n) => n[0])
+//             .join('')
+//             .toUpperCase()
+//             .slice(0, 2);
+//     }
+//     next();
+// });
 
 const User = mongoose.model('User', userSchema);
 

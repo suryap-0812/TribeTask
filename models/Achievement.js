@@ -1,4 +1,4 @@
-const mongoose = require('mongoose')
+import mongoose from 'mongoose';
 
 const achievementDefinitionSchema = new mongoose.Schema({
     name: {
@@ -73,10 +73,7 @@ const userAchievementSchema = new mongoose.Schema({
 userAchievementSchema.index({ user: 1, tribe: 1 })
 userAchievementSchema.index({ achievement: 1 })
 
-const AchievementDefinition = mongoose.model('AchievementDefinition', achievementDefinitionSchema)
-const UserAchievement = mongoose.model('UserAchievement', userAchievementSchema)
+const AchievementDefinition = mongoose.model('AchievementDefinition', achievementDefinitionSchema);
+const UserAchievement = mongoose.model('UserAchievement', userAchievementSchema);
 
-module.exports = {
-    AchievementDefinition,
-    UserAchievement
-}
+export { AchievementDefinition, UserAchievement };

@@ -44,12 +44,21 @@ const taskSchema = new mongoose.Schema(
         completedAt: {
             type: Date,
         },
-        tags: [
-            {
-                type: String,
-                trim: true,
-            },
-        ],
+        tags: {
+            type: [String],
+            default: [],
+        },
+        isGroupTask: {
+            type: Boolean,
+            default: false,
+        },
+        assignedRole: {
+            type: String, // 'personal', 'member', 'leader', 'delegate'
+            default: 'personal',
+        },
+        tribeRole: {
+            type: String, // Snapshot of creator's role in tribe
+        }
     },
     {
         timestamps: true,
@@ -57,7 +66,7 @@ const taskSchema = new mongoose.Schema(
 );
 
 // Update completed and completedAt when status changes to completed
-taskSchema.pre('save', function (next) {
+taskSchema.pre('save', function () {
     if (this.isModified('status')) {
         if (this.status === 'completed' && !this.completed) {
             this.completed = true;
@@ -81,8 +90,6 @@ taskSchema.pre('save', function (next) {
             this.completedAt = null;
         }
     }
-
-    next();
 });
 
 // Index for faster queries

@@ -110,7 +110,7 @@ router.post(
             res.status(201).json(task);
         } catch (error) {
             console.error('Create task error:', error);
-            res.status(500).json({ message: 'Server error' });
+            res.status(500).json({ message: error.message || 'Server error' });
         }
     }
 );

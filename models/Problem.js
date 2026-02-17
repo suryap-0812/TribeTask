@@ -1,4 +1,4 @@
-const mongoose = require('mongoose')
+import mongoose from 'mongoose';
 
 const solutionSchema = new mongoose.Schema({
     author: {
@@ -81,4 +81,6 @@ problemSchema.index({ tribe: 1, status: 1 })
 problemSchema.index({ creator: 1 })
 problemSchema.index({ category: 1 })
 
-module.exports = mongoose.model('Problem', problemSchema)
+const Problem = mongoose.model('Problem', problemSchema);
+
+export default Problem;

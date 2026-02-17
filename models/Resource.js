@@ -1,4 +1,4 @@
-const mongoose = require('mongoose')
+import mongoose from 'mongoose';
 
 const resourceSchema = new mongoose.Schema({
     tribe: {
@@ -52,4 +52,6 @@ resourceSchema.index({ tribe: 1, type: 1 })
 resourceSchema.index({ uploader: 1 })
 resourceSchema.index({ category: 1 })
 
-module.exports = mongoose.model('Resource', resourceSchema)
+const Resource = mongoose.model('Resource', resourceSchema);
+
+export default Resource;
